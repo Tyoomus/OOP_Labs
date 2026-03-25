@@ -1,0 +1,240 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+' Базовые перечисления
+enum CombatMode {
+  MELEE
+  RANGED
+  CASTING
+}
+
+enum CellType {
+  EMPTY
+  IMPASSABLE
+}
+
+' Основные игровые классы
+class Cell {
+  - type: CellType
+  - hasPlayer: bool
+  - hasEnemy: bool
+  --
+  + Cell()
+  + getType(): CellType
+  + setType(type: CellType): void
+  + getHasPlayer(): bool
+  + setHasPlayer(has: bool): void
+  + getHasEnemy(): bool
+  + setHasEnemy(has: bool): void
+  + isPassable(): bool
+  + isEmpty(): bool
+}
+
+class GameField {
+  - width: int
+  - height: int
+  - grid: vector<vector<Cell>>
+  --
+  + GameField(width: int, height: int)
+  + getWidth(): int
+  + getHeight(): int
+  + getCell(x: int, y: int): Cell&
+  + isValidPosition(x: int, y: int): bool
+  + isCellPassable(x: int, y: int): bool
+  + setCellType(x: int, y: int, type: CellType): void
+  + generateImpassableCells(count: int): void
+  + placePlayer(x: int, y: int): bool
+  + removePlayer(x: int, y: int): bool
+  + placeEnemy(x: int, y: int): bool
+  + removeEnemy(x: int, y: int): bool
+  + movePlayer(fromX: int, fromY: int, toX: int, toY: int): bool
+  + moveEnemy(fromX: int, fromY: int, toX: int, toY: int): bool
+}
+
+class Enemy {
+  - health: int
+  - damage: int
+  - positionX: int
+  - positionY: int
+  - isAliveFlag: bool
+  --
+  + Enemy(startX: int, startY: int, enemyHealth: int, enemyDamage: int)
+  + getHealth(): int
+  + getDamage(): int
+  + getPositionX(): int
+  + getPositionY(): int
+  + isAlive(): bool
+  + setPosition(x: int, y: int): void
+  + takeDamage(damageAmount: int): void
+  + moveTowardsPlayer(playerX: int, playerY: int): bool
+}
+
+class Player {
+  - name: string
+  - health: int
+  - maxHealth: int
+  - damage: int
+  - score: int
+  - positionX: int
+  - positionY: int
+  - combatMode: CombatMode
+  - attackRange: int
+  - mana: int
+  - maxMana: int
+  - manaRegenerationRate: int
+  - spellHand: SpellHand
+  --
+  + Player(playerName: string, startX: int, startY: int)
+  + getName(): string
+  + getHealth(): int
+  + getMaxHealth(): int
+  + getDamage(): int
+  + getScore(): int
+  + getPositionX(): int
+  + getPositionY(): int
+  + getCombatMode(): CombatMode
+  + getAttackRange(): int
+  + getMana(): int
+  + getMaxMana(): int
+  + hasEnoughMana(cost: int): bool
+  + spendMana(amount: int): void
+  + regenerateMana(): void
+  + getSpellHand(): SpellHand&
+  + learnSpell(spell: unique_ptr<Spell>): bool
+  + castSpell(spellIndex: int, game: GameManager&, targetX: int, targetY: int): bool
+  + setPosition(x: int, y: int): void
+  + takeDamage(damage: int): void
+  + heal(amount: int): void
+  + addScore(points: int): void
+  + switchCombatMode(): void
+  + isAlive(): bool
+  + move(deltaX: int, deltaY: int): bool
+}
+
+' Система заклинаний
+abstract class Spell {
+  {abstract}
+  + getName(): string
+  + getDescription(): string
+  + getManaCost(): int
+  + getCastRange(): int
+  + canCast(casterX: int, casterY: int, targetX: int, targetY: int): bool
+  + cast(game: GameManager&, casterX: int, casterY: int, targetX: int, targetY: int): void
+  + clone(): unique_ptr<Spell>
+}
+
+class DirectDamageSpell {
+  - name: string
+  - description: string
+  - manaCost: int
+  - damageAmount: int
+  - castRange: int
+  --
+  + DirectDamageSpell(spellName: string, spellDescription: string, cost: int, damage: int, range: int)
+  + getName(): string
+  + getDescription(): string
+  + getManaCost(): int
+  + getCastRange(): int
+  + getDamageAmount(): int
+  + canCast(casterX: int, casterY: int, targetX: int, targetY: int): bool
+  + cast(game: GameManager&, casterX: int, casterY: int, targetX: int, targetY: int): void
+  + clone(): unique_ptr<Spell>
+}
+
+class AreaDamageSpell {
+  - name: string
+  - description: string
+  - manaCost: int
+  - damageAmount: int
+  - castRange: int
+  - areaRadius: int
+  --
+  + AreaDamageSpell(spellName: string, spellDescription: string, cost: int, damage: int, range: int, radius: int)
+  + getName(): string
+  + getDescription(): string
+  + getManaCost(): int
+  + getCastRange(): int
+  + getDamageAmount(): int
+  + getAreaRadius(): int
+  + canCast(casterX: int, casterY: int, targetX: int, targetY: int): bool
+  + cast(game: GameManager&, casterX: int, casterY: int, targetX: int, targetY: int): void
+  + clone(): unique_ptr<Spell>
+}
+
+class SpellHand {
+  - spells: vector<unique_ptr<Spell>>
+  - maxSpells: int
+  - selectedSpellIndex: int
+  --
+  + SpellHand(maxCapacity: int = 5)
+  + addSpell(spell: unique_ptr<Spell>): bool
+  + removeSpell(index: int): bool
+  + canAddSpell(): bool
+  + getSpellCount(): int
+  + getMaxSpells(): int
+  + getSelectedSpellIndex(): int
+  + getSpell(index: int): const Spell*
+  + getSelectedSpell(): const Spell*
+  + selectNextSpell(): void
+  + selectPreviousSpell(): void
+  + selectSpell(index: int): void
+  + takeSpell(index: int): unique_ptr<Spell>
+  + clear(): void
+}
+
+class SpellBook {
+  {static}
+  + createRandomSpell(): unique_ptr<Spell>
+  + getAllAvailableSpells(): vector<unique_ptr<Spell>>
+  + createSpellByName(spellName: string): unique_ptr<Spell>
+}
+
+class GameManager {
+  - player: Player
+  - field: GameField
+  - enemies: vector<Enemy>
+  - gameRunning: bool
+  - spellTargetX: int
+  - spellTargetY: int
+  - selectingSpellTarget: bool
+  - selectedSpellIndex: int
+  --
+  + GameManager()
+  + startGame(): void
+  + processTurn(): void
+  + displayGameState(): void
+  + isGameRunning(): bool
+  + castDirectDamageSpell(spell: const DirectDamageSpell&, targetX: int, targetY: int): void
+  + castAreaDamageSpell(spell: const AreaDamageSpell&, targetX: int, targetY: int): void
+  + initializeGame(): void
+  + processPlayerTurn(): void
+  + processEnemiesTurn(): void
+  + checkGameOver(): void
+  + displayField(): void
+  + performAttack(): void
+  + processSpellSelection(): void
+  + processSpellTargeting(): void
+  + displaySpellInfo(): void
+  + addRandomSpellToPlayer(): void
+}
+
+' Связи наследования
+Spell <|-- DirectDamageSpell
+Spell <|-- AreaDamageSpell
+
+' Связи агрегации/композиции
+GameManager "1" *-- "1" Player : contains
+GameManager "1" *-- "1" GameField : contains
+GameManager "1" *-- "*" Enemy : contains
+Player "1" *-- "1" SpellHand : contains
+SpellHand "1" *-- "*" Spell : contains
+GameField "1" *-- "*" Cell : contains
+
+' Связи использования
+GameManager ..> SpellBook : uses
+Player ..> Spell : uses
+DirectDamageSpell ..> GameManager : uses
+AreaDamageSpell ..> GameManager : uses
+Enemy ..> Player : tracks
+@enduml

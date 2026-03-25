@@ -1,0 +1,13 @@
+main.o: main.cpp GameManager.h Player.h SpellHand.h SpellCard.h \
+  GameField.h Cell.h Enemy.h DirectDamageSpell.h AreaDamageSpell.h
+Player.o: Player.cpp Player.h SpellHand.h SpellCard.h
+GameManager.o: GameManager.cpp GameManager.h Player.h SpellHand.h \
+  SpellCard.h GameField.h Cell.h Enemy.h DirectDamageSpell.h \
+  AreaDamageSpell.h
+GameField.o: GameField.cpp GameField.h Cell.h
+Cell.o: Cell.cpp Cell.h
+Enemy.o: Enemy.cpp Enemy.h
+DirectDamageSpell.o: DirectDamageSpell.cpp DirectDamageSpell.h \
+  SpellCard.h
+AreaDamageSpell.o: AreaDamageSpell.cpp AreaDamageSpell.h SpellCard.h
+SpellHand.o: SpellHand.cpp SpellHand.h SpellCard.h
