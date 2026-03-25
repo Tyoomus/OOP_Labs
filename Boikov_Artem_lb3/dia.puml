@@ -1,0 +1,232 @@
+@startuml
+' Заголовок диаграммы
+title UML диаграмма классов - Лабораторная работа №3
+
+' Стили
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor White
+    BorderColor Black
+}
+
+' Класс GameEngine
+class GameEngine {
+    - currentGame: unique_ptr<GameManager>
+    - saveManager: SaveManager
+    - state: GameState
+    - currentLevel: int
+    - shouldExit: bool
+    - saveRequested: bool
+    - loadRequested: bool
+    - loadFilename: string
+    --
+    + run(): void
+    + showMainMenu(): void
+    + startNewGame(): void
+    + loadGame(filename: string): void
+    + saveGame(filename: string): void
+    + exitGame(): void
+    + requestSave(): void
+    + requestLoad(filename: string): void
+    + isRunning(): bool
+    + getState(): GameState
+    - processGameLoop(): void
+    - handleGameOver(): void
+    - handleVictory(): void
+    - cleanup(): void
+    - checkAndProcessRequests(): void
+}
+
+' Класс GameManager
+class GameManager {
+    - player: Player
+    - field: GameField
+    - enemies: vector<Enemy>
+    - gameRunning: bool
+    - spellTargetX: int
+    - spellTargetY: int
+    - selectingSpellTarget: bool
+    - selectedSpellIndex: int
+    - gameEngine: GameEngine*
+    --
+    + GameManager(engine: GameEngine*)
+    + startGame(): void
+    + processTurn(): void
+    + displayGameState(): void
+    + isGameRunning(): bool
+    + getSaveData(): GameSaveData
+    + loadFromData(data: GameSaveData): bool
+    + nextLevel(): void
+    + areAllEnemiesDefeated(): bool
+    + getPlayer(): const Player&
+    + setGameEngine(engine: GameEngine*): void
+    + setGameRunning(running: bool): void
+    - processSpellSelection(): void
+    - processSpellTargeting(): void
+    - displaySpellInfo(): void
+    - addRandomSpellToPlayer(): void
+    - castDirectDamageSpell(...): void
+    - castAreaDamageSpell(...): void
+}
+
+' Класс SaveManager
+class SaveManager {
+    --
+    + saveGame(data: GameSaveData, filename: string): void
+    + loadGame(filename: string): GameSaveData
+    - serialize(data: GameSaveData): string
+    - deserialize(json: string): GameSaveData
+}
+
+' Структура GameSaveData
+class GameSaveData <<struct>> {
+    + playerName: string
+    + playerHealth: int
+    + playerMaxHealth: int
+    + playerMana: int
+    + playerMaxMana: int
+    + playerScore: int
+    + playerX: int
+    + playerY: int
+    + combatMode: int
+    + enemies: vector<EnemyData>
+    + impassableCells: vector<CellData>
+    + spells: vector<SpellData>
+    + selectedSpellIndex: int
+    + level: int
+    + fieldWidth: int
+    + fieldHeight: int
+}
+
+' Класс Player (расширенный)
+class Player {
+    - name: string
+    - health: int
+    - maxHealth: int
+    - damage: int
+    - score: int
+    - positionX: int
+    - positionY: int
+    - combatMode: CombatMode
+    - attackRange: int
+    - mana: int
+    - maxMana: int
+    - manaRegenerationRate: int
+    - spellHand: SpellHand
+    --
+    + Player(name: string, x: int, y: int)
+    + getHealth(): int
+    + getMaxHealth(): int
+    + takeDamage(amount: int): void
+    + heal(amount: int): void
+    + getMana(): int
+    + getMaxMana(): int
+    + spendMana(amount: int): void
+    + regenerateMana(): void
+    + restoreMana(amount: int): void
+    + getSpellHand(): SpellHand&
+    + learnSpell(spell: unique_ptr<Spell>): bool
+    + addSpellPoints(points: int): void
+    + switchCombatMode(): void
+    + isAlive(): bool
+    + setPosition(x: int, y: int): void
+}
+
+' Класс GameField
+class GameField {
+    - width: int
+    - height: int
+    - grid: vector<vector<Cell>>
+    --
+    + GameField(width: int, height: int)
+    + GameField(const GameField& other)
+    + GameField(GameField&& other)
+    + operator=(const GameField&): GameField&
+    + operator=(GameField&&): GameField&
+    + getWidth(): int
+    + getHeight(): int
+    + getCell(x: int, y: int): Cell&
+    + isValidPosition(x: int, y: int): bool
+    + isCellPassable(x: int, y: int): bool
+    + generateImpassableCells(count: int): void
+    + placePlayer(x: int, y: int): bool
+    + placeEnemy(x: int, y: int): bool
+}
+
+' Класс Spell (интерфейс)
+abstract class Spell {
+    + {abstract} getName(): string
+    + {abstract} getDescription(): string
+    + {abstract} getManaCost(): int
+    + {abstract} getCastRange(): int
+    + {abstract} canCast(casterX, casterY, targetX, targetY): bool
+    + {abstract} cast(game, casterX, casterY, targetX, targetY): void
+    + {abstract} clone(): unique_ptr<Spell>
+}
+
+' Наследники Spell
+class DirectDamageSpell {
+    - name: string
+    - description: string
+    - manaCost: int
+    - damageAmount: int
+    - castRange: int
+    --
+    + DirectDamageSpell(...)
+    + getDamageAmount(): int
+}
+
+class AreaDamageSpell {
+    - name: string
+    - description: string
+    - manaCost: int
+    - damageAmount: int
+    - castRange: int
+    - areaRadius: int
+    --
+    + AreaDamageSpell(...)
+    + getAreaRadius(): int
+}
+
+' Класс SpellHand
+class SpellHand {
+    - spells: vector<unique_ptr<Spell>>
+    - maxSpells: int
+    - selectedSpellIndex: int
+    --
+    + SpellHand(maxCapacity: int)
+    + addSpell(spell: unique_ptr<Spell>): bool
+    + removeSpell(index: int): bool
+    + getSpell(index: int): const Spell*
+    + getSelectedSpell(): const Spell*
+    + selectSpell(index: int): void
+    + getSpellCount(): int
+    + canAddSpell(): bool
+    + clear(): void
+    + takeSpell(index: int): unique_ptr<Spell>
+}
+
+' Enum GameState
+enum GameState {
+    MENU
+    RUNNING
+    GAME_OVER
+    VICTORY
+    LOADING
+}
+
+' Отношения
+GameEngine --> GameManager : contains
+GameEngine --> SaveManager : uses
+GameEngine --> GameState : uses
+GameManager --> Player : contains
+GameManager --> GameField : contains
+GameManager --> "0..*" Enemy : contains
+GameManager --> GameEngine : calls back via
+SaveManager --> GameSaveData : serializes/deserializes
+Player --> SpellHand : contains
+SpellHand --> "*" Spell : contains
+DirectDamageSpell --|> Spell : extends
+AreaDamageSpell --|> Spell : extends
+
+@enduml
